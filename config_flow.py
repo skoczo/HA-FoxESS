@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 # TODO adjust the data schema to the data that you need
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("host"): str,
+        vol.Required("device_id"): str,
         vol.Required("username"): str,
         vol.Required("password"): str,
     }
@@ -31,9 +31,9 @@ class PlaceholderHub:
     TODO Remove this placeholder class and replace with things from your PyPI package.
     """
 
-    def __init__(self, host: str) -> None:
+    def __init__(self, device_id: str) -> None:
         """Initialize."""
-        self.host = host
+        self.device_id = device_id
 
     async def authenticate(self, username: str, password: str) -> bool:
         """Test if we can authenticate with the host."""
@@ -53,7 +53,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     #     your_validate_func, data["username"], data["password"]
     # )
 
-    hub = PlaceholderHub(data["host"])
+    hub = PlaceholderHub(data["device_id"])
 
     if not await hub.authenticate(data["username"], data["password"]):
         raise InvalidAuth
