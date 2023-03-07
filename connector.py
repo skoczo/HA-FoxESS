@@ -46,13 +46,16 @@ class FoxEssConnector(object):
             "contentType": "application/json",
             "Content-Type": "application/json;charset=utf-8",
         }
-        response = requests.post(
+        """response = requests.post(
             "https://www.foxesscloud.com/c/v0/user/login",
             json=payload,
             timeout=120,
             headers=headers,
-        )
+        )"""
 
+        return False
+
+    """
         response_json = response.json()
         errno = response_json["errno"]
         access = response_json["result"]["access"]
@@ -63,13 +66,13 @@ class FoxEssConnector(object):
         self._token = response_json["result"]["token"]
         _LOGGER.info(f"Login response: {str(response.content)}")
 
-        return True
+        return True"""
 
     def earnings(self):
         headers = {
             "contentType": "application/json",
             "Content-Type": "application/json;charset=utf-8",
-            "token": self._token,
+            # "token": self._token,
         }
 
         response = requests.get(
@@ -80,3 +83,8 @@ class FoxEssConnector(object):
 
         if response.status_code == 200:
             response.json
+
+
+class FoxESSDataSet:
+    def __init__(self) -> None:
+        self._current_production = None
