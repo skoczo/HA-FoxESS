@@ -1,5 +1,6 @@
 """Update coordinator for TAURON sensors."""
 import logging
+import random
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
@@ -27,4 +28,8 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
         so entities can quickly look up their data.
         """
         _LOGGER.error("_async_update_data")
-        return None
+
+        data_set = FoxESSDataSet()
+        data_set._current_production = random.random() * 100
+
+        return data_set

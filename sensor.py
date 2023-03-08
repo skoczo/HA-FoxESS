@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import USERNAME, PASSWORD, DEVICE_ID
+from .const import USERNAME, PASSWORD, DEVICE_ID, SENSOR_TYPES_YAML
 
 from .connector import FoxEssConnector
 from .coordinator import FoxESSUpdateCoordinator
@@ -30,6 +30,7 @@ async def async_setup_platform(
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
+    name = "FoxESS by Skoczeq"
     CONNECTOR._username = config[USERNAME]
     CONNECTOR._password = config[PASSWORD]
     CONNECTOR._device_id = config[DEVICE_ID]
@@ -39,7 +40,23 @@ async def async_setup_platform(
     )
     await coordinator.async_request_refresh()
 
-    async_add_entities([FoxESSSensor("Sensor.a", 64, coordinator)], True)
+    sensors = []
+
+    for sensor_data in SENSOR_TYPES_YAML:
+        entity = SENSOR_TYPES_YAML[sensor_data]
+        sensors.append(
+            FoxESSSensor(
+                name,
+                coordinator,
+                sensor_data,
+                entity["state_class"],
+                config[DEVICE_ID],
+                entity["property_name"],
+            )
+        )
+
+    # [FoxESSSensor(name, 64, coordinator)]
+    async_add_entities(sensors, True)
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
@@ -48,27 +65,43 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
 
 
 class FoxESSSensor(SensorEntity, CoordinatorEntity):
-    """Representation of a Sensor."""
-
-    _attr_has_entity_name = True
-    _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_state_class = SensorStateClass.MEASUREMENT
-
-    def __init__(self, name, value, coordinator):
+    def __init__(
+        self,
+        name: str,
+        coordinator: FoxESSUpdateCoordinator,
+        sensor_type: str,
+        state_class: SensorStateClass,
+        _device_id: str,
+        property_name: str,
+    ):
         super().__init__(coordinator)
-        self._value = value
-        self._attr_name = name
-        _LOGGER.info(f"Sensor name: {name}")
-
-    def _handle_coordinator_update(self) -> None:
-        _LOGGER.error("_handle_coordinator_update")
+        self._client_name = name
+        self._sensor_type = sensor_type
+        self._device_id = _device_id
+        self._state_class = state_class
+        self._property_name = property_name
 
     @property
-    def name(self):
-        """Return the name of the sensor."""
-        return self._attr_name
+    def device_class(self):
+        return SensorDeviceClass.ENERGY
+
+    @property
+    def state_class(self):
+        return self._state_class
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
         return self._value
+
+    @property
+    def name(self):
+        return f"{self._client_name} {self._sensor_type}"
+
+    def _handle_coordinator_update(self) -> None:
+        self._value = getattr(self.coordinator.data, self._property_name)
+        self.async_write_ha_state()
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return f"sfoxess-{self._device_id}-{self._sensor_type.lower()}"

@@ -21,6 +21,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required("device_id"): str,
         vol.Required("username"): str,
         vol.Required("password"): str,
+        vol.Required("PLANT_NAME"): str,
     }
 )
 
