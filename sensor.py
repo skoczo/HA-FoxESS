@@ -65,6 +65,8 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
 
 
 class FoxESSSensor(SensorEntity, CoordinatorEntity):
+    device_info = "FoxESS"
+
     def __init__(
         self,
         name: str,
@@ -80,6 +82,7 @@ class FoxESSSensor(SensorEntity, CoordinatorEntity):
         self._device_id = _device_id
         self._state_class = state_class
         self._property_name = property_name
+        self._value = None
 
     @property
     def device_class(self):

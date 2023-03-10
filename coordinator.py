@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN
-from .connector import FoxESSDataSet
+from .connector import FoxESSDataSet, FoxEssConnector
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,7 +18,11 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=5)
         )
-        self.connector = None
+        self._connector = FoxEssConnector()
+        self._connector.username = username
+        self._connector.password = password
+        self._connector.device_id = device_id
+
         self._device_id = device_id
 
     async def _async_update_data(self) -> FoxESSDataSet:
@@ -29,7 +33,15 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
         """
         _LOGGER.error("_async_update_data")
 
+        earnings_data = await self.hass.async_add_executor_job(self._update)
+        if earnings_data is None:
+            _LOGGER.error("Can't get earnings data")
+            return
+
         data_set = FoxESSDataSet()
-        data_set._current_production = random.random() * 100
+        data_set.today_generation = earnings_data.today.generation
 
         return data_set
+
+    def _update(self):
+        return self._connector.get_earnings()

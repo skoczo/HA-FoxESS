@@ -1,7 +1,7 @@
 """The sFoxESS integration."""
 from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
@@ -12,10 +12,26 @@ from .const import DOMAIN
 PLATFORMS: list[Platform] = [Platform.LIGHT]
 
 
+async def async_setup(hass, config):
+    """Set up the TAURON component."""
+    hass.data[DOMAIN] = {}
+
+    if not hass.config_entries.async_entries(DOMAIN) and DOMAIN in config:
+        hass.async_create_task(
+            hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": SOURCE_IMPORT}, data=config[DOMAIN]
+            )
+        )
+
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up sFoxESS from a config entry."""
 
-    hass.data.setdefault(DOMAIN, {})
+    # hass.data.setdefault(DOMAIN, {})
+    if DOMAIN not in hass.data:
+        hass.data[DOMAIN] = {}
     # TODO 1. Create API instance
     # TODO 2. Validate the API connection (and authentication)
     # TODO 3. Store an API object for your platforms to access
