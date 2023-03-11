@@ -24,6 +24,7 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
         self._connector.device_id = device_id
 
         self._device_id = device_id
+        self._data_set = FoxESSDataSet()
 
     async def _async_update_data(self) -> FoxESSDataSet:
         """Fetch data from API endpoint.
@@ -38,10 +39,13 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
             _LOGGER.error("Can't get earnings data")
             return
 
-        data_set = FoxESSDataSet()
-        data_set.today_generation = earnings_data.today.generation
+        self._data_set.today_generation = earnings_data["today"]["generation"]
+        self._data_set.month_generation = earnings_data["month"]["generation"]
+        self._data_set.year_generation = earnings_data["year"]["generation"]
+        self._data_set.cumulate_generation = earnings_data["cumulate"]["generation"]
+        self._data_set.current_production = earnings_data["power"]
 
-        return data_set
+        return self._data_set
 
     def _update(self):
         return self._connector.get_earnings()

@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import USERNAME, PASSWORD, DEVICE_ID, SENSOR_TYPES_YAML
+from .const import *
 
 from .connector import FoxEssConnector
 from .coordinator import FoxESSUpdateCoordinator
@@ -46,12 +46,12 @@ async def async_setup_platform(
         entity = SENSOR_TYPES_YAML[sensor_data]
         sensors.append(
             FoxESSSensor(
-                name,
+                entity[NAME],
                 coordinator,
                 sensor_data,
-                entity["state_class"],
+                entity[STATE_CLASS],
                 config[DEVICE_ID],
-                entity["property_name"],
+                entity[PROPERTY_NAME],
             )
         )
 
@@ -64,6 +64,7 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
     # async_add_entities([FoxESSSensor("Sensor.a", 64)], True)
 
 
+# TODO: add measurment units
 class FoxESSSensor(SensorEntity, CoordinatorEntity):
     device_info = "FoxESS"
 
@@ -98,10 +99,11 @@ class FoxESSSensor(SensorEntity, CoordinatorEntity):
 
     @property
     def name(self):
-        return f"{self._client_name} {self._sensor_type}"
+        return f"{self.device_info} {self._client_name}"
 
     def _handle_coordinator_update(self) -> None:
         self._value = getattr(self.coordinator.data, self._property_name)
+
         self.async_write_ha_state()
 
     @property
