@@ -11,6 +11,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.const import ENERGY_KILO_WATT_HOUR, POWER_KILO_WATT
 
 from .const import *
 
@@ -18,6 +19,7 @@ from .connector import FoxEssConnector
 from .coordinator import FoxESSUpdateCoordinator
 
 import logging
+from decimal import Decimal
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +54,7 @@ async def async_setup_platform(
                 entity[STATE_CLASS],
                 config[DEVICE_ID],
                 entity[PROPERTY_NAME],
+                entity[UNITS],
             )
         )
 
@@ -76,8 +79,10 @@ class FoxESSSensor(SensorEntity, CoordinatorEntity):
         state_class: SensorStateClass,
         _device_id: str,
         property_name: str,
+        units: str,
     ):
         super().__init__(coordinator)
+        self._attr_native_unit_of_measurement = units
         self._client_name = name
         self._sensor_type = sensor_type
         self._device_id = _device_id
@@ -102,7 +107,9 @@ class FoxESSSensor(SensorEntity, CoordinatorEntity):
         return f"{self.device_info} {self._client_name}"
 
     def _handle_coordinator_update(self) -> None:
-        self._value = getattr(self.coordinator.data, self._property_name)
+        self._value = round(
+            Decimal(getattr(self.coordinator.data, self._property_name)), 2
+        )
 
         self.async_write_ha_state()
 

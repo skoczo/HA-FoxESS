@@ -27,12 +27,7 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
         self._data_set = FoxESSDataSet()
 
     async def _async_update_data(self) -> FoxESSDataSet:
-        """Fetch data from API endpoint.
-
-        This is the place to pre-process the data to lookup tables
-        so entities can quickly look up their data.
-        """
-        _LOGGER.error("_async_update_data")
+        _LOGGER.info("_async_update_data")
 
         earnings_data = await self.hass.async_add_executor_job(self._update)
         if earnings_data is None:
