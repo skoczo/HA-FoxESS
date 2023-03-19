@@ -16,7 +16,7 @@ from homeassistant.const import ENERGY_KILO_WATT_HOUR, POWER_KILO_WATT
 from .const import *
 
 from .connector import FoxEssConnector
-from .coordinator import FoxESSUpdateCoordinator
+from .coordinator import FoxESSUpdateCoordinator, FoxESSStatisticsCoordinator
 
 import logging
 from decimal import Decimal
@@ -58,8 +58,19 @@ async def async_setup_platform(
             )
         )
 
+    statisticsCoordinator = FoxESSStatisticsCoordinator(
+        hass, config[USERNAME], config[PASSWORD], config[DEVICE_ID]
+    )
+
+    await statisticsCoordinator.async_request_refresh()
+    statisticsCoordinator.async_add_listener(_update_statistics, "None")
+
     # [FoxESSSensor(name, 64, coordinator)]
     async_add_entities(sensors, True)
+
+
+def _update_statistics():
+    _LOGGER.info("_update_statistics")
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):

@@ -7,13 +7,10 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
-# TODO List the platforms that you want to support.
-# For your initial PR, limit it to 1 platform.
-PLATFORMS: list[Platform] = [Platform.LIGHT]
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
 async def async_setup(hass, config):
-    """Set up the TAURON component."""
     hass.data[DOMAIN] = {}
 
     if not hass.config_entries.async_entries(DOMAIN) and DOMAIN in config:
@@ -29,13 +26,8 @@ async def async_setup(hass, config):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up sFoxESS from a config entry."""
 
-    # hass.data.setdefault(DOMAIN, {})
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
-    # TODO 1. Create API instance
-    # TODO 2. Validate the API connection (and authentication)
-    # TODO 3. Store an API object for your platforms to access
-    # hass.data[DOMAIN][entry.entry_id] = MyApi(...)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))

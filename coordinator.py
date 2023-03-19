@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
     def __init__(self, hass: HomeAssistant, username, password, device_id):
         super().__init__(
-            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=5)
+            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=60)
         )
         self._connector = FoxEssConnector()
         self._connector.username = username
@@ -27,8 +27,6 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
         self._data_set = FoxESSDataSet()
 
     async def _async_update_data(self) -> FoxESSDataSet:
-        _LOGGER.info("_async_update_data")
-
         earnings_data = await self.hass.async_add_executor_job(self._update)
         if earnings_data is None:
             _LOGGER.error("Can't get earnings data")
@@ -44,3 +42,25 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
 
     def _update(self):
         return self._connector.get_earnings()
+
+
+class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
+    def __init__(self, hass: HomeAssistant, username, password, device_id):
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=DOMAIN + "_statistics",
+            update_interval=timedelta(seconds=6),
+        )
+        self._connector = FoxEssConnector()
+        self._connector.username = username
+        self._connector.password = password
+        self._connector.device_id = device_id
+
+        self._device_id = device_id
+
+    async def _async_update_data(self) -> FoxESSDataSet:
+        await self.hass.async_add_executor_job(self._update)
+
+    def _update(self):
+        _LOGGER.error("FoxESSStatisticsCoordinator._update")
