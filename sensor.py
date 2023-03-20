@@ -23,7 +23,7 @@ from decimal import Decimal
 
 _LOGGER = logging.getLogger(__name__)
 
-CONNECTOR = FoxEssConnector()
+CONNECTOR: FoxEssConnector = None
 
 
 async def async_setup_platform(
@@ -32,14 +32,9 @@ async def async_setup_platform(
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    name = "FoxESS by Skoczeq"
-    CONNECTOR._username = config[USERNAME]
-    CONNECTOR._password = config[PASSWORD]
-    CONNECTOR._device_id = config[DEVICE_ID]
+    CONNECTOR = FoxEssConnector(config[USERNAME], config[PASSWORD], config[DEVICE_ID])
 
-    coordinator = FoxESSUpdateCoordinator(
-        hass, config[USERNAME], config[PASSWORD], config[DEVICE_ID]
-    )
+    coordinator = FoxESSUpdateCoordinator(hass, CONNECTOR)
     await coordinator.async_request_refresh()
 
     sensors = []
@@ -58,9 +53,7 @@ async def async_setup_platform(
             )
         )
 
-    statisticsCoordinator = FoxESSStatisticsCoordinator(
-        hass, config[USERNAME], config[PASSWORD], config[DEVICE_ID]
-    )
+    statisticsCoordinator = FoxESSStatisticsCoordinator(hass, CONNECTOR)
 
     await statisticsCoordinator.async_request_refresh()
     statisticsCoordinator.async_add_listener(_update_statistics, "None")
@@ -70,7 +63,7 @@ async def async_setup_platform(
 
 
 def _update_statistics():
-    _LOGGER.info("_update_statistics")
+    _LOGGER.info("_update_statistics: update database")
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):

@@ -1,7 +1,7 @@
 import hashlib
 import requests
 import logging
-import json
+from datetime import date
 from homeassistant.exceptions import HomeAssistantError
 
 from enum import Enum
@@ -30,12 +30,13 @@ KNOWN_ERRORS = {
 
 
 class FoxEssConnector(object):
-    def __init__(self):
-        self._password: str = None
-        self._username: str = None
-        self._device_id: str = None
+    def __init__(self, username, password, device_id):
+        self._password: str = password
+        self._username: str = username
+        self._device_id: str = device_id
         self._token: str = None
         self._earnings = None
+        self._report = dict()
 
     @property
     def earnings(self):
@@ -96,7 +97,7 @@ class FoxEssConnector(object):
     def check_errno(self, errno: str):
         if errno not in KNOWN_ERRORS:
             _LOGGER.error("Unsupported error from foxess: %s", errno)
-            raise Exception(f"Unsupported error from foxess: {errno}")
+            raise HomeAssistantError(f"Unsupported error from foxess: {errno}")
 
         known = KNOWN_ERRORS[errno]
         if known["action"] == Action.LOGIN:
@@ -119,6 +120,39 @@ class FoxEssConnector(object):
 
         return True
 
+    def get_report(self):
+        self.login()
+
+        headers = {
+            "contentType": "application/json",
+            "token": self._token,
+        }
+
+        # TODO: get data for more days. Configurable?
+        today = date.today()
+        payload = {
+            "deviceID": self._device_id,
+            "reportType": "day",
+            "variables": ["generation"],
+            "queryDate": {"year": today.year, "month": today.month, "day": today.day},
+        }
+
+        report_response = requests.post(
+            json=payload,
+            url="https://www.foxesscloud.com/c/v0/device/history/report",
+            headers=headers,
+        )
+
+        if report_response.status_code == 200:
+            report_data = report_response.json()
+            self.check_errno(report_data["errno"])
+
+            self._report[f"{today.year}-{today.month}-{today.day}"] = report_data[
+                "result"
+            ][0]["data"]
+
+        return self._report
+
     def get_earnings(self):
         self.login()
 
@@ -137,6 +171,11 @@ class FoxEssConnector(object):
             self.check_errno(response.json()["errno"])
 
             return response.json()["result"]
+
+        _LOGGER.error(
+            f"Wrong response. Status code: {response.status_code}, data: {str(response.content)}"
+        )
+        return None
 
 
 class FoxESSDataSet:
