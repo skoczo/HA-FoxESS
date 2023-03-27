@@ -1,7 +1,7 @@
 """Update coordinator for TAURON sensors."""
 import logging
 import random
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -55,5 +55,7 @@ class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
 
     def _update(self):
         self._report = self._connector.get_report()
+
+        today = datetime.today()
 
         _LOGGER.error("FoxESSStatisticsCoordinator._update get data")

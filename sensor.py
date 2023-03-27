@@ -17,13 +17,17 @@ from .const import *
 
 from .connector import FoxEssConnector
 from .coordinator import FoxESSUpdateCoordinator, FoxESSStatisticsCoordinator
+from .statistics import StatisticsUpdater
 
 import logging
 from decimal import Decimal
+from datetime import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
 CONNECTOR: FoxEssConnector = None
+STATISTICS_COORDINATOR: FoxESSStatisticsCoordinator = None
+STATISTICS_UPDATER: StatisticsUpdater = None
 
 
 async def async_setup_platform(
@@ -52,18 +56,16 @@ async def async_setup_platform(
                 entity[UNITS],
             )
         )
+    STATISTICS_COORDINATOR = FoxESSStatisticsCoordinator(hass, CONNECTOR)
+    STATISTICS_UPDATER = StatisticsUpdater(hass, CONNECTOR, STATISTICS_COORDINATOR)
 
-    statisticsCoordinator = FoxESSStatisticsCoordinator(hass, CONNECTOR)
-
-    await statisticsCoordinator.async_request_refresh()
-    statisticsCoordinator.async_add_listener(_update_statistics, "None")
+    await STATISTICS_COORDINATOR.async_request_refresh()
+    STATISTICS_COORDINATOR.async_add_listener(
+        STATISTICS_UPDATER.update_statistics, None
+    )
 
     # [FoxESSSensor(name, 64, coordinator)]
     async_add_entities(sensors, True)
-
-
-def _update_statistics():
-    _LOGGER.info("_update_statistics: update database")
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
