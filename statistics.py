@@ -16,7 +16,6 @@ from homeassistant.const import ENERGY_KILO_WATT_HOUR
 
 from .connector import FoxEssConnector
 from .const import STATISTICS_DOMAIN
-from .coordinator import FoxESSStatisticsCoordinator
 
 import asyncio
 
@@ -65,30 +64,27 @@ def run_nested_until_complete(future, loop=None):
 
 
 class StatisticsUpdater:
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        connector: FoxEssConnector,
-        coordinator: FoxESSStatisticsCoordinator,
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, connector: FoxEssConnector) -> None:
         self._hass = hass
         self._connector = connector
-        self._coordinator = coordinator
 
-    def update_statistics(self):
+    async def update_statistics(self, report):
         _LOGGER.error("update_statistics")
 
-        statistic_id = "sfoxess-generation"
+        statistic_id = "sensor.foxess_cumulate_generation"
 
-        generation = self._coordinator._report["2023-3-26"]
+        generation = report["2023-4-1"]
 
         today = datetime.today()
 
         yesterday = today.replace(hour=23, minute=0)
-        yesterday = yesterday - timedelta(days=-1)
+        yesterday = yesterday - timedelta(days=1)
 
-        stat = run_nested_until_complete(self.get_stats(statistic_id, yesterday))
+        stat = await self.get_stats(statistic_id, today.replace(hour=0, minute=0))
 
+        _LOGGER.info(stat)
+
+        # TODO: if not found skip and try next time
         sum = stat[statistic_id][0]["sum"]
         last_stats_time = stat[statistic_id][0]["start"]
 

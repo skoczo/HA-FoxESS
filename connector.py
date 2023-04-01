@@ -29,14 +29,19 @@ KNOWN_ERRORS = {
 }
 
 
+def execute_post(url, payload, headers):
+    return requests.post(url=url, json=payload, headers=headers)
+
+
 class FoxEssConnector(object):
-    def __init__(self, username, password, device_id):
+    def __init__(self, username, password, device_id, hass):
         self._password: str = password
         self._username: str = username
         self._device_id: str = device_id
         self._token: str = None
         self._earnings = None
         self._report = dict()
+        self._hass = hass
 
     @property
     def earnings(self):
@@ -120,7 +125,7 @@ class FoxEssConnector(object):
 
         return True
 
-    def get_report(self):
+    async def get_report(self):
         self.login()
 
         headers = {
@@ -136,11 +141,11 @@ class FoxEssConnector(object):
             "variables": ["generation"],
             "queryDate": {"year": today.year, "month": today.month, "day": today.day},
         }
-
-        report_response = requests.post(
-            json=payload,
-            url="https://www.foxesscloud.com/c/v0/device/history/report",
-            headers=headers,
+        report_response = await self._hass.async_add_executor_job(
+            execute_post,
+            "https://www.foxesscloud.com/c/v0/device/history/report",
+            payload,
+            headers,
         )
 
         if report_response.status_code == 200:

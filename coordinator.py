@@ -8,7 +8,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN
 from .connector import FoxESSDataSet, FoxEssConnector
-
+from .statistics import StatisticsUpdater
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,13 +49,9 @@ class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
         )
         self._connector = connector
         self._report = None
+        self._statistics_updater = StatisticsUpdater(hass, self._connector)
 
     async def _async_update_data(self) -> FoxESSDataSet:
-        await self.hass.async_add_executor_job(self._update)
-
-    def _update(self):
-        self._report = self._connector.get_report()
-
-        today = datetime.today()
-
         _LOGGER.error("FoxESSStatisticsCoordinator._update get data")
+        self._report = await self._connector.get_report()
+        await self._statistics_updater.update_statistics(self._report)

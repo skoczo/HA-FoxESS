@@ -27,7 +27,6 @@ _LOGGER = logging.getLogger(__name__)
 
 CONNECTOR: FoxEssConnector = None
 STATISTICS_COORDINATOR: FoxESSStatisticsCoordinator = None
-STATISTICS_UPDATER: StatisticsUpdater = None
 
 
 async def async_setup_platform(
@@ -36,7 +35,9 @@ async def async_setup_platform(
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    CONNECTOR = FoxEssConnector(config[USERNAME], config[PASSWORD], config[DEVICE_ID])
+    CONNECTOR = FoxEssConnector(
+        config[USERNAME], config[PASSWORD], config[DEVICE_ID], hass
+    )
 
     coordinator = FoxESSUpdateCoordinator(hass, CONNECTOR)
     await coordinator.async_request_refresh()
@@ -57,15 +58,15 @@ async def async_setup_platform(
             )
         )
     STATISTICS_COORDINATOR = FoxESSStatisticsCoordinator(hass, CONNECTOR)
-    STATISTICS_UPDATER = StatisticsUpdater(hass, CONNECTOR, STATISTICS_COORDINATOR)
-
+    STATISTICS_COORDINATOR.async_add_listener(listener, None)
     await STATISTICS_COORDINATOR.async_request_refresh()
-    STATISTICS_COORDINATOR.async_add_listener(
-        STATISTICS_UPDATER.update_statistics, None
-    )
 
     # [FoxESSSensor(name, 64, coordinator)]
     async_add_entities(sensors, True)
+
+
+def listener():
+    _LOGGER.error("listener")
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):

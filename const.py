@@ -25,7 +25,7 @@ SENSOR_TYPES_YAML = {
         NAME: "Current production",
         STATE_CLASS: SensorStateClass.MEASUREMENT,
         PROPERTY_NAME: "current_production",
-        UNITS: POWER_KILO_WATT,
+        UNITS: ENERGY_KILO_WATT_HOUR,
     },
     TODAY_GENERATION: {
         NAME: "Today generation",
