@@ -6,6 +6,8 @@ DOMAIN = "sfoxess"
 USERNAME = "username"
 PASSWORD = "password"
 DEVICE_ID = "device_id"
+IMPORT = "import"
+IMPORT_START_DATE = "import_start_date"
 
 STATISTICS_DOMAIN = "sfoxess_importer"
 

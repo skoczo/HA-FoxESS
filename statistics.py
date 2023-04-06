@@ -17,50 +17,7 @@ from homeassistant.const import ENERGY_KILO_WATT_HOUR
 from .connector import FoxEssConnector
 from .const import STATISTICS_DOMAIN
 
-import asyncio
-
 _LOGGER = logging.getLogger(__name__)
-
-
-def run_nested_until_complete(future, loop=None):
-    """Run an event loop from within an executing task.
-
-    This method will execute a nested event loop, and will not
-    return until the passed future has completed execution. The
-    nested loop shares the data structures of the main event loop,
-    so tasks and events scheduled on the main loop will still
-    execute while the nested loop is running.
-
-    Semantically, this method is very similar to `yield from
-    asyncio.wait_for(future)`, and where possible, that is the
-    preferred way to block until a future is complete. The
-    difference is that this method can be called from a
-    non-coroutine function, even if that function was itself
-    invoked from within a coroutine.
-    """
-    if loop is None:
-        loop = asyncio.get_event_loop()
-
-    loop._check_closed()
-    if not loop.is_running():
-        raise RuntimeError("Event loop is not running.")
-    new_task = not isinstance(future, asyncio.futures.Future)
-    task = asyncio.tasks.ensure_future(future, loop=loop)
-    if new_task:
-        # An exception is raised if the future didn't complete, so there
-        # is no need to log the "destroy pending task" message
-        task._log_destroy_pending = False
-    while not task.done():
-        try:
-            loop._run_once()
-        except:
-            if new_task and future.done() and not future.cancelled():
-                # The coroutine raised a BaseException. Consume the exception
-                # to not log a warning, the caller doesn't have access to the
-                # local task.
-                future.exception()
-            raise
-    return task.result()
 
 
 class StatisticsUpdater:
@@ -73,14 +30,16 @@ class StatisticsUpdater:
 
         statistic_id = "sensor.foxess_cumulate_generation"
 
-        generation = report["2023-4-1"]
+        generation = report["2023-4-4"]
 
         today = datetime.today()
 
         yesterday = today.replace(hour=23, minute=0)
         yesterday = yesterday - timedelta(days=1)
 
-        stat = await self.get_stats(statistic_id, today.replace(hour=0, minute=0))
+        start = datetime(day=1, month=4, year=2023)
+
+        stat = await self.get_stats(statistic_id, start)
 
         _LOGGER.info(stat)
 
@@ -88,9 +47,9 @@ class StatisticsUpdater:
         sum = stat[statistic_id][0]["sum"]
         last_stats_time = stat[statistic_id][0]["start"]
 
-        self._update_stats(
-            statistic_id, statistic_id, sum, last_stats_time, generation, today
-        )
+        # self._update_stats(
+        #    statistic_id, statistic_id, sum, last_stats_time, generation, today
+        # )
 
     def _update_stats(
         self,

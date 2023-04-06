@@ -40,7 +40,9 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
 
 
 class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass: HomeAssistant, connector: FoxEssConnector):
+    def __init__(
+        self, hass: HomeAssistant, connector: FoxEssConnector, import_start_date
+    ):
         super().__init__(
             hass,
             _LOGGER,
@@ -50,6 +52,7 @@ class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
         self._connector = connector
         self._report = None
         self._statistics_updater = StatisticsUpdater(hass, self._connector)
+        self.import_start_date = import_start_date
 
     async def _async_update_data(self) -> FoxESSDataSet:
         _LOGGER.error("FoxESSStatisticsCoordinator._update get data")

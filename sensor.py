@@ -57,9 +57,12 @@ async def async_setup_platform(
                 entity[UNITS],
             )
         )
-    STATISTICS_COORDINATOR = FoxESSStatisticsCoordinator(hass, CONNECTOR)
-    STATISTICS_COORDINATOR.async_add_listener(listener, None)
-    await STATISTICS_COORDINATOR.async_request_refresh()
+
+    if config[IMPORT]:
+        STATISTICS_COORDINATOR = FoxESSStatisticsCoordinator(
+            hass, CONNECTOR, config[IMPORT_START_DATE]
+        )
+        STATISTICS_COORDINATOR.async_add_listener(listener, None)
 
     # [FoxESSSensor(name, 64, coordinator)]
     async_add_entities(sensors, True)
