@@ -2,6 +2,7 @@ import hashlib
 import requests
 import logging
 from datetime import date
+import datetime
 from homeassistant.exceptions import HomeAssistantError
 
 from enum import Enum
@@ -33,6 +34,10 @@ def execute_post(url, payload, headers):
     return requests.post(url=url, json=payload, headers=headers)
 
 
+def execute_get(url, headers, timeout):
+    return requests.get(url=url, headers=headers)
+
+
 class FoxEssConnector(object):
     def __init__(self, username, password, device_id, hass):
         self._password: str = password
@@ -40,7 +45,7 @@ class FoxEssConnector(object):
         self._device_id: str = device_id
         self._token: str = None
         self._earnings = None
-        self._report = dict()
+        self._report = None
         self._hass = hass
 
     @property
@@ -71,7 +76,7 @@ class FoxEssConnector(object):
     def username(self, username):
         self._username = username
 
-    def get_token(self):
+    async def get_token(self):
         password_hash = hashlib.md5(self._password.encode("utf-8")).hexdigest()
 
         payload = {"user": self._username, "password": password_hash}
@@ -79,17 +84,18 @@ class FoxEssConnector(object):
             "contentType": "application/json",
             "Content-Type": "application/json;charset=utf-8",
         }
-        response = requests.post(
+
+        response = await self._hass.async_add_executor_job(
+            execute_post,
             "https://www.foxesscloud.com/c/v0/user/login",
-            json=payload,
-            timeout=120,
-            headers=headers,
+            payload,
+            headers,
         )
 
         response_json = response.json()
         errno = response_json["errno"]
 
-        self.check_errno(errno)
+        await self.check_errno(errno)
 
         access = response_json["result"]["access"]
         if access == 0:
@@ -99,7 +105,7 @@ class FoxEssConnector(object):
         self._token = response_json["result"]["token"]
         _LOGGER.info(f"Login response: {str(response.content)}")
 
-    def check_errno(self, errno: str):
+    async def check_errno(self, errno: str):
         if errno not in KNOWN_ERRORS:
             _LOGGER.error("Unsupported error from foxess: %s", errno)
             raise HomeAssistantError(f"Unsupported error from foxess: {errno}")
@@ -107,7 +113,7 @@ class FoxEssConnector(object):
         known = KNOWN_ERRORS[errno]
         if known["action"] == Action.LOGIN:
             _LOGGER.warning(known["message"])
-            self.get_token()
+            await self.get_token()
 
         if known["action"] == Action.SUCCESS:
             _LOGGER.info(known["message"])
@@ -119,27 +125,29 @@ class FoxEssConnector(object):
         if known["action"] == Action.FAIL:
             raise HomeAssistantError(known["message"])
 
-    def login(self):
+    async def login(self):
         if self._token is None:
-            self.get_token()
+            await self.get_token()
 
         return True
 
-    async def get_report(self):
-        self.login()
+    async def get_report(self, report_date: datetime):
+        await self.login()
 
         headers = {
             "contentType": "application/json",
             "token": self._token,
         }
 
-        # TODO: get data for more days. Configurable?
-        today = date.today()
         payload = {
             "deviceID": self._device_id,
             "reportType": "day",
             "variables": ["generation"],
-            "queryDate": {"year": today.year, "month": today.month, "day": today.day},
+            "queryDate": {
+                "year": report_date.year,
+                "month": report_date.month,
+                "day": report_date.day,
+            },
         }
         report_response = await self._hass.async_add_executor_job(
             execute_post,
@@ -150,30 +158,29 @@ class FoxEssConnector(object):
 
         if report_response.status_code == 200:
             report_data = report_response.json()
-            self.check_errno(report_data["errno"])
+            await self.check_errno(report_data["errno"])
 
-            self._report[f"{today.year}-{today.month}-{today.day}"] = report_data[
-                "result"
-            ][0]["data"]
+            self._report = report_data["result"][0]["data"]
 
         return self._report
 
-    def get_earnings(self):
-        self.login()
+    async def get_earnings(self):
+        await self.login()
 
         headers = {
             "contentType": "application/json",
             "token": self._token,
         }
 
-        response = requests.get(
+        response = await self._hass.async_add_executor_job(
+            execute_get,
             f"https://www.foxesscloud.com/c/v0/device/earnings?deviceID={self._device_id}",
-            headers=headers,
-            timeout=60,
+            headers,
+            60,
         )
 
         if response.status_code == 200:
-            self.check_errno(response.json()["errno"])
+            await self.check_errno(response.json()["errno"])
 
             return response.json()["result"]
 

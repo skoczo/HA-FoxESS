@@ -16,13 +16,13 @@ _LOGGER = logging.getLogger(__name__)
 class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
     def __init__(self, hass: HomeAssistant, connector: FoxEssConnector):
         super().__init__(
-            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=60)
+            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=5)
         )
         self._connector = connector
         self._data_set = FoxESSDataSet()
 
     async def _async_update_data(self) -> FoxESSDataSet:
-        earnings_data = await self.hass.async_add_executor_job(self._update)
+        earnings_data = await self._connector.get_earnings()
         if earnings_data is None:
             _LOGGER.error("Can't get earnings data")
             return
@@ -35,13 +35,13 @@ class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
 
         return self._data_set
 
-    def _update(self):
-        return self._connector.get_earnings()
-
 
 class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
     def __init__(
-        self, hass: HomeAssistant, connector: FoxEssConnector, import_start_date
+        self,
+        hass: HomeAssistant,
+        connector: FoxEssConnector,
+        import_start_date: datetime,
     ):
         super().__init__(
             hass,
@@ -52,9 +52,10 @@ class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
         self._connector = connector
         self._report = None
         self._statistics_updater = StatisticsUpdater(hass, self._connector)
-        self.import_start_date = import_start_date
+        self._import_start_date = import_start_date
 
     async def _async_update_data(self) -> FoxESSDataSet:
-        _LOGGER.error("FoxESSStatisticsCoordinator._update get data")
-        self._report = await self._connector.get_report()
-        await self._statistics_updater.update_statistics(self._report)
+        _LOGGER.info("FoxESSStatisticsCoordinator._update get data")
+        await self._statistics_updater.update_statistics(
+            self._connector, self._import_start_date
+        )

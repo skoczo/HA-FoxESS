@@ -58,9 +58,12 @@ async def async_setup_platform(
             )
         )
 
+    _LOGGER.error("config[IMPORT_START_DATE]: " + config[IMPORT_START_DATE])
+
     if config[IMPORT]:
+        start_date = datetime.strptime(config[IMPORT_START_DATE], "%d-%m-%Y")
         STATISTICS_COORDINATOR = FoxESSStatisticsCoordinator(
-            hass, CONNECTOR, config[IMPORT_START_DATE]
+            hass, CONNECTOR, start_date
         )
         STATISTICS_COORDINATOR.async_add_listener(listener, None)
 

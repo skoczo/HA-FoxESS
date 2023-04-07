@@ -25,31 +25,74 @@ class StatisticsUpdater:
         self._hass = hass
         self._connector = connector
 
-    async def update_statistics(self, report):
+    async def update_statistics(
+        self, connector: FoxEssConnector, import_start_date: datetime
+    ):
         _LOGGER.error("update_statistics")
 
         statistic_id = "sensor.foxess_cumulate_generation"
 
-        generation = report["2023-4-4"]
+        current_date = datetime.today()
+        current_date = current_date.replace(minute=0, second=0)
 
-        today = datetime.today()
+        _LOGGER.error(
+            "first stats: %s",
+            await self.get_stats(
+                statistic_id,
+                datetime(year=2023, month=4, day=1, hour=0, minute=0),
+                datetime(year=2023, month=4, day=1, hour=23, minute=59),
+            ),
+        )
 
-        yesterday = today.replace(hour=23, minute=0)
-        yesterday = yesterday - timedelta(days=1)
+        """
+        state: generation sum value at specific point of time
+        sum: generation sum from statistics period time
+        """
 
-        start = datetime(day=1, month=4, year=2023)
+        import_date = import_start_date
+        sum = 0
+        state = await connector.get_earnings()
+        _LOGGER.info(state)
+        stats = {statistic_id: list()}
 
-        stat = await self.get_stats(statistic_id, start)
+        earnings = await connector.get_earnings()
+        _LOGGER.info(earnings)
+        sum = None
+        state = earnings["cumulate"]["generation"]
 
-        _LOGGER.info(stat)
+        while import_date <= current_date:
+            current_date = current_date.replace(minute=0, second=0, microsecond=0)
+            generation = await connector.get_report(current_date)
 
-        # TODO: if not found skip and try next time
-        sum = stat[statistic_id][0]["sum"]
-        last_stats_time = stat[statistic_id][0]["start"]
+            end_time = import_date.replace(hour=23, minute=59)
 
-        # self._update_stats(
-        #    statistic_id, statistic_id, sum, last_stats_time, generation, today
-        # )
+            # stats = await self.get_stats(statistic_id, import_date, end_time)
+            # _LOGGER.info(stats)
+
+            for i in range(23):
+                stat_entity = {
+                    "start": import_date,
+                    "end": import_date + timedelta(hours=1),
+                    "state": state,
+                    "sum": sum,
+                }
+
+                stats[statistic_id].insert(0, stat_entity)
+
+                state -= generation[i]["value"]
+
+                import_date = import_date - timedelta(hours=1)
+
+            import_date = import_date.replace(hour=0)
+            import_date = import_date - timedelta(hours=1)
+
+            # TODO: if not found skip and try next time
+            sum = stats[statistic_id][0]["sum"]
+            last_stats_time = stats[statistic_id][0]["start"]
+
+            # self._update_stats(
+            #    statistic_id, statistic_id, sum, last_stats_time, generation, today
+            # )
 
     def _update_stats(
         self,
@@ -82,12 +125,12 @@ class StatisticsUpdater:
             statistic_data.append(stats)
         async_add_external_statistics(self._hass, metadata, statistic_data)
 
-    async def get_stats(self, statistic_id, yesterday):
+    async def get_stats(self, statistic_id, start, end):
         return await get_instance(self._hass).async_add_executor_job(
             statistics_during_period,
             self._hass,
-            yesterday,
-            None,
+            start,
+            end,
             [statistic_id],
             "hour",
             None,
