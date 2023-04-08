@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import time
+import pytz
 from datetime import timedelta, datetime
 
 from homeassistant.components.recorder import get_instance
@@ -32,7 +33,8 @@ class StatisticsUpdater:
 
         statistic_id = "sensor.foxess_cumulate_generation"
 
-        current_date = datetime.today()
+        local_tz = pytz.timezone("Europe/Warsaw")
+        current_date = local_tz.localize(datetime.today())
         current_date = current_date.replace(minute=0, second=0)
 
         _LOGGER.error(
@@ -53,23 +55,37 @@ class StatisticsUpdater:
         sum = 0
         state = await connector.get_earnings()
         _LOGGER.info(state)
-        stats = {statistic_id: list()}
+        stats = list()
 
         earnings = await connector.get_earnings()
         _LOGGER.info(earnings)
-        sum = None
-        state = earnings["cumulate"]["generation"]
+        sum = 0
+        state = 0
+
+        stat_entity = {
+            "start": import_date - timedelta(hours=1),
+            "end": import_date,
+            "state": None,
+            "sum": 0,
+        }
+
+        stats.insert(0, stat_entity)
 
         while import_date <= current_date:
             current_date = current_date.replace(minute=0, second=0, microsecond=0)
-            generation = await connector.get_report(current_date)
+            generation = await connector.get_report(import_date)
+
+            _LOGGER.info(import_date)
+            _LOGGER.info(generation)
 
             end_time = import_date.replace(hour=23, minute=59)
 
-            # stats = await self.get_stats(statistic_id, import_date, end_time)
-            # _LOGGER.info(stats)
+            statistics = await self.get_stats(statistic_id, import_date, end_time)
+            _LOGGER.info(statistics)
 
             for i in range(23):
+                sum = sum + generation[i]["value"]
+                state = state + generation[i]["value"]
                 stat_entity = {
                     "start": import_date,
                     "end": import_date + timedelta(hours=1),
@@ -77,52 +93,25 @@ class StatisticsUpdater:
                     "sum": sum,
                 }
 
-                stats[statistic_id].insert(0, stat_entity)
+                stats.insert(0, stat_entity)
 
-                state -= generation[i]["value"]
-
-                import_date = import_date - timedelta(hours=1)
+                import_date = import_date + timedelta(hours=1)
 
             import_date = import_date.replace(hour=0)
-            import_date = import_date - timedelta(hours=1)
+            import_date = import_date + timedelta(hours=1)
 
-            # TODO: if not found skip and try next time
-            sum = stats[statistic_id][0]["sum"]
-            last_stats_time = stats[statistic_id][0]["start"]
+        self._update_stats(statistic_id, statistic_id, stats)
 
-            # self._update_stats(
-            #    statistic_id, statistic_id, sum, last_stats_time, generation, today
-            # )
-
-    def _update_stats(
-        self,
-        statistic_id,
-        statistic_name,
-        initial_sum,
-        last_stats_time,
-        generation,
-        date: datetime,
-    ):
-        current_sum = initial_sum
+    def _update_stats(self, statistic_id, statistic_name, statistic_data):
         metadata: StatisticMetaData = {
             "has_mean": False,
             "has_sum": True,
-            "name": statistic_name,
-            "source": STATISTICS_DOMAIN,
-            "statistic_id": statistic_id,
+            "name": None,
+            "statistic_id": "sfoxess:import_generation",
+            "source": "sfoxess",
             "unit_of_measurement": ENERGY_KILO_WATT_HOUR,
         }
-        statistic_data = []
-        for raw_hour in generation:
-            start = date.replace(hour=raw_hour["index"])
 
-            if last_stats_time is not None and start <= last_stats_time:
-                continue
-            usage = float(raw_hour["value"])
-
-            current_sum += usage
-            stats = {"start": start, "state": usage, "sum": current_sum}
-            statistic_data.append(stats)
         async_add_external_statistics(self._hass, metadata, statistic_data)
 
     async def get_stats(self, statistic_id, start, end):

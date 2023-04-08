@@ -22,6 +22,7 @@ from .statistics import StatisticsUpdater
 import logging
 from decimal import Decimal
 from datetime import datetime
+import pytz
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -62,8 +63,9 @@ async def async_setup_platform(
 
     if config[IMPORT]:
         start_date = datetime.strptime(config[IMPORT_START_DATE], "%d-%m-%Y")
+        local_tz = pytz.timezone("Europe/Warsaw")
         STATISTICS_COORDINATOR = FoxESSStatisticsCoordinator(
-            hass, CONNECTOR, start_date
+            hass, CONNECTOR, local_tz.localize(start_date)
         )
         STATISTICS_COORDINATOR.async_add_listener(listener, None)
 
