@@ -37,15 +37,6 @@ class StatisticsUpdater:
         current_date = local_tz.localize(datetime.today())
         current_date = current_date.replace(minute=0, second=0)
 
-        _LOGGER.error(
-            "first stats: %s",
-            await self.get_stats(
-                statistic_id,
-                datetime(year=2023, month=4, day=1, hour=0, minute=0),
-                datetime(year=2023, month=4, day=1, hour=23, minute=59),
-            ),
-        )
-
         """
         state: generation sum value at specific point of time
         sum: generation sum from statistics period time
@@ -73,19 +64,22 @@ class StatisticsUpdater:
 
         while import_date <= current_date:
             current_date = current_date.replace(minute=0, second=0, microsecond=0)
-            generation = await connector.get_report(import_date)
+            generation_daily = await connector.get_report_daily(import_date)
+            generation_monthly = await connector.get_report_monthly(import_date)
 
             _LOGGER.info(import_date)
-            _LOGGER.info(generation)
+            _LOGGER.info(generation_daily)
 
             end_time = import_date.replace(hour=23, minute=59)
 
             statistics = await self.get_stats(statistic_id, import_date, end_time)
             _LOGGER.info(statistics)
 
+            tmp_stats = list()
+
             for i in range(23):
-                sum = sum + generation[i]["value"]
-                state = state + generation[i]["value"]
+                sum = sum + generation_daily[i]["value"]
+                state = state + generation_daily[i]["value"]
                 stat_entity = {
                     "start": import_date,
                     "end": import_date + timedelta(hours=1),
@@ -93,14 +87,42 @@ class StatisticsUpdater:
                     "sum": sum,
                 }
 
-                stats.insert(0, stat_entity)
+                tmp_stats.insert(0, stat_entity)
 
                 import_date = import_date + timedelta(hours=1)
+
+            day_generation = self._get_day_generation(
+                import_date.day, generation_monthly
+            )
+
+            if day_generation is None:
+                raise str("day generation cannot be None")
+
+            num_of_hours = self._get_num_of_generation_hours(tmp_stats)
+
+            # TODO: calculate number to add to each generation hour
+
+            stats += tmp_stats
 
             import_date = import_date.replace(hour=0)
             import_date = import_date + timedelta(hours=1)
 
         self._update_stats(statistic_id, statistic_id, stats)
+
+    def _get_num_of_generation_hours(self, tmp_stats):
+        num_of_hours = 0
+        for item in tmp_stats:
+            if item["state"] is not 0:
+                num_of_hours += 1
+
+        return num_of_hours
+
+    def _get_day_generation(self, day, generation_monthly):
+        for item in generation_monthly:
+            if item["index"] == day:
+                return item["value"]
+
+        return None
 
     def _update_stats(self, statistic_id, statistic_name, statistic_data):
         metadata: StatisticMetaData = {

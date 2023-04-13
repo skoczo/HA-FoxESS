@@ -131,9 +131,19 @@ class FoxEssConnector(object):
 
         return True
 
-    async def get_report(self, report_date: datetime):
+    async def get_report_daily(self, report_date: datetime):
         await self.login()
+        report_type = "day"
 
+        return await self._get_report(report_date, report_type)
+
+    async def get_report_monthly(self, report_date: datetime):
+        await self.login()
+        report_type = "month"
+
+        return await self._get_report(report_date, report_type)
+
+    async def _get_report(self, report_date, report_type):
         headers = {
             "contentType": "application/json",
             "token": self._token,
@@ -141,7 +151,7 @@ class FoxEssConnector(object):
 
         payload = {
             "deviceID": self._device_id,
-            "reportType": "day",
+            "reportType": report_type,
             "variables": ["generation"],
             "queryDate": {
                 "year": report_date.year,
