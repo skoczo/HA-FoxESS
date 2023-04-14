@@ -75,9 +75,20 @@ class StatisticsUpdater:
             statistics = await self.get_stats(statistic_id, import_date, end_time)
             _LOGGER.info(statistics)
 
+            # day generation value from monthly report
+            day_generation = self._get_day_generation(
+                import_date.day, generation_monthly
+            )
+
+            correction = self._calculate_correction(generation_daily, day_generation)
+
             tmp_stats = list()
 
             for i in range(23):
+                if generation_daily[i]["value"] != 0:
+                    sum += correction
+                    state += correction
+
                 sum = sum + generation_daily[i]["value"]
                 state = state + generation_daily[i]["value"]
                 stat_entity = {
@@ -91,17 +102,6 @@ class StatisticsUpdater:
 
                 import_date = import_date + timedelta(hours=1)
 
-            day_generation = self._get_day_generation(
-                import_date.day, generation_monthly
-            )
-
-            if day_generation is None:
-                raise str("day generation cannot be None")
-
-            num_of_hours = self._get_num_of_generation_hours(tmp_stats)
-
-            # TODO: calculate number to add to each generation hour
-
             stats += tmp_stats
 
             import_date = import_date.replace(hour=0)
@@ -109,13 +109,19 @@ class StatisticsUpdater:
 
         self._update_stats(statistic_id, statistic_id, stats)
 
-    def _get_num_of_generation_hours(self, tmp_stats):
-        num_of_hours = 0
-        for item in tmp_stats:
-            if item["state"] is not 0:
-                num_of_hours += 1
+    def _calculate_correction(self, generation_daily, day_generation):
+        hours = 0
+        sum = 0
 
-        return num_of_hours
+        for entity in generation_daily:
+            if entity["value"] != 0:
+                sum += entity["value"]
+                hours += 1
+
+        if hours == 0:
+            return 0
+
+        return (day_generation - sum) / hours
 
     def _get_day_generation(self, day, generation_monthly):
         for item in generation_monthly:
