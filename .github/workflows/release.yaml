@@ -18,6 +18,9 @@ jobs:
           ls -l /home/runner/work
           cd /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
           pwd
+          echo "ls before zip command"
+          ls -l
+          echo "before zip command"
           zip sfoxess-${{ github.ref }}.zip -r ./
           ls -l /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
       - name: Upload zip to release
