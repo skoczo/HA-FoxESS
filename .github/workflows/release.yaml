@@ -6,7 +6,7 @@ on:
 
 jobs:
   release:
-    name: Prepare release
+    name: Prepare new release
     runs-on: ubuntu-latest
     steps:
       - name: Download repo
