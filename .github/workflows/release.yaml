@@ -24,10 +24,11 @@ jobs:
           zip sfoxess.zip -r ./
           ls -l /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
       - name: Upload zip to release
-        uses: svenstaro/upload-release-action@v2
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess/sfoxess.zip
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess/sfoxess.zip
           asset_name: sfoxess-${{ github.ref }}.zip
-          tag: ${{ github.ref }}
-          overwrite: true
+          asset_content_type: application/zip
