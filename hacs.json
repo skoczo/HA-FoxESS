@@ -1,0 +1,8 @@
+{
+    "name": "sFoxESS",
+    "render_readme": false,
+    "zip_release": true,
+    "filename": "sfoxess.zip",
+    "country": "PL",
+    "homeassistant": "2022.12.0"
+  }
