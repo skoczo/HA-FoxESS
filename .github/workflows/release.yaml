@@ -15,8 +15,10 @@ jobs:
       - name: Zip xfoxess dir
         run: |
           ls -l /home/runner/work
+          ls -l /home/runner/work/HA-FoxESS
           cd /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
           zip sfoxess-${{ github.ref }}.zip -r ./
+          ls -l /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
       - name: Upload zip to release
         uses: svenstaro/upload-release-action@v2
         with:
