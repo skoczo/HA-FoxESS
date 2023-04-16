@@ -1,26 +1,45 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  release:
-    name: Prepare new release
+  build:
+    name: Upload Release Asset
     runs-on: ubuntu-latest
     steps:
       - name: Download repo
-        uses: actions/checkout@v1
-
+        uses: actions/checkout@v2
       - name: Zip xfoxess dir
         run: |
+          pwd
+          ls -l /home/runner/work
           cd /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
-          zip sfoxess-${{ github.ref }}.zip -r ./
-      - name: Upload zip to release
-        uses: svenstaro/upload-release-action@v2
+          pwd
+          echo "ls before zip command"
+          ls -l
+          echo "before zip command"
+          zip sfoxess.zip -r ./
+          ls -l /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess/sfoxess.zip
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload zip to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess/sfoxess.zip
           asset_name: sfoxess-${{ github.ref }}.zip
-          tag: ${{ github.ref }}
-          overwrite: true
+          asset_content_type: application/zip
