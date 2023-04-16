@@ -46,7 +46,7 @@ class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(seconds=60 * 90),
         )
         self._connector = connector
         self._report = None
