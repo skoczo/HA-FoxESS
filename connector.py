@@ -1,12 +1,10 @@
+""" code to login """
 import hashlib
 import requests
 import logging
-from datetime import date
 import datetime
 from homeassistant.exceptions import HomeAssistantError
-
 from enum import Enum
-
 from .config_flow import InvalidAuth
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,7 +29,7 @@ KNOWN_ERRORS = {
 
 
 def execute_post(url, payload, headers):
-    return requests.post(url=url, json=payload, headers=headers)
+    return requests.post(url=url, json=payload, headers=headers, timeout=120)
 
 
 def execute_get(url, headers, timeout):
@@ -99,11 +97,10 @@ class FoxEssConnector(object):
 
         access = response_json["result"]["access"]
         if access == 0:
-            _LOGGER.error(f"Login failed. Response: {str(response.content)}")
+            _LOGGER.error("Login failed. Response: %s", str(response.content))
             return False
 
         self._token = response_json["result"]["token"]
-        _LOGGER.info(f"Login response: {str(response.content)}")
 
     async def check_errno(self, errno: str):
         if errno not in KNOWN_ERRORS:
@@ -116,7 +113,7 @@ class FoxEssConnector(object):
             await self.get_token()
 
         if known["action"] == Action.SUCCESS:
-            _LOGGER.info(known["message"])
+            _LOGGER.debug(known["message"])
 
         if known["action"] == Action.AUTH_FAIL:
             _LOGGER.error(known["message"])
@@ -195,7 +192,9 @@ class FoxEssConnector(object):
             return response.json()["result"]
 
         _LOGGER.error(
-            f"Wrong response. Status code: {response.status_code}, data: {str(response.content)}"
+            "Wrong response. Status code: %s, data: %s",
+            response.status_code,
+            str(response.content),
         )
         return None
 

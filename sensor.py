@@ -17,7 +17,6 @@ from .const import *
 
 from .connector import FoxEssConnector
 from .coordinator import FoxESSUpdateCoordinator, FoxESSStatisticsCoordinator
-from .statistics import StatisticsUpdater
 
 import logging
 from decimal import Decimal
@@ -26,9 +25,6 @@ import pytz
 
 _LOGGER = logging.getLogger(__name__)
 
-CONNECTOR: FoxEssConnector = None
-STATISTICS_COORDINATOR: FoxESSStatisticsCoordinator = None
-
 
 async def async_setup_platform(
     hass: HomeAssistant,
@@ -36,11 +32,11 @@ async def async_setup_platform(
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    CONNECTOR = FoxEssConnector(
+    _connector = FoxEssConnector(
         config[USERNAME], config[PASSWORD], config[DEVICE_ID], hass
     )
 
-    coordinator = FoxESSUpdateCoordinator(hass, CONNECTOR)
+    coordinator = FoxESSUpdateCoordinator(hass, _connector)
     await coordinator.async_request_refresh()
 
     sensors = []
@@ -59,30 +55,27 @@ async def async_setup_platform(
             )
         )
 
-    _LOGGER.error("config[IMPORT_START_DATE]: " + config[IMPORT_START_DATE])
-
     if config[IMPORT]:
         start_date = datetime.strptime(config[IMPORT_START_DATE], "%d-%m-%Y")
+        # TODO: consider to parametrize that
         local_tz = pytz.timezone("Europe/Warsaw")
-        STATISTICS_COORDINATOR = FoxESSStatisticsCoordinator(
-            hass, CONNECTOR, local_tz.localize(start_date)
+        _statistics_coordinator = FoxESSStatisticsCoordinator(
+            hass, _connector, local_tz.localize(start_date)
         )
-        STATISTICS_COORDINATOR.async_add_listener(listener, None)
+        _statistics_coordinator.async_add_listener(listener, None)
 
-    # [FoxESSSensor(name, 64, coordinator)]
     async_add_entities(sensors, True)
 
 
+# just a hack to foce coordiantor to be triggered
 def listener():
     _LOGGER.error("listener")
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
     _LOGGER.error(async_add_entities)
-    # async_add_entities([FoxESSSensor("Sensor.a", 64)], True)
 
 
-# TODO: add measurment units
 class FoxESSSensor(SensorEntity, CoordinatorEntity):
     device_info = "FoxESS"
 

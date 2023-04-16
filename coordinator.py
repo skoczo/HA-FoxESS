@@ -1,6 +1,5 @@
 """Update coordinator for TAURON sensors."""
 import logging
-import random
 from datetime import timedelta, datetime
 
 from homeassistant.core import HomeAssistant
@@ -16,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
     def __init__(self, hass: HomeAssistant, connector: FoxEssConnector):
         super().__init__(
-            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=60)
+            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=60 * 5)
         )
         self._connector = connector
         self._data_set = FoxESSDataSet()
@@ -46,8 +45,8 @@ class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name=DOMAIN + "_statistics",
-            update_interval=timedelta(seconds=60 * 30),
+            name=DOMAIN,
+            update_interval=timedelta(seconds=60),
         )
         self._connector = connector
         self._report = None
@@ -55,7 +54,6 @@ class FoxESSStatisticsCoordinator(DataUpdateCoordinator):
         self._import_start_date = import_start_date
 
     async def _async_update_data(self) -> FoxESSDataSet:
-        _LOGGER.info("FoxESSStatisticsCoordinator._update get data")
         await self._statistics_updater.update_statistics(
             self._connector, self._import_start_date
         )
