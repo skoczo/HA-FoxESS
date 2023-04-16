@@ -7,13 +7,12 @@ on:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  release:
-    name: Prepare new release
+  build:
+    name: Upload Release Asset
     runs-on: ubuntu-latest
     steps:
       - name: Download repo
-        uses: actions/checkout@v1
-
+        uses: actions/checkout@v2
       - name: Zip xfoxess dir
         run: |
           pwd
