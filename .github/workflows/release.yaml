@@ -21,7 +21,7 @@ jobs:
           echo "ls before zip command"
           ls -l
           echo "before zip command"
-          zip sfoxess-${{ github.ref }}.zip -r ./
+          zip sfoxess.zip -r ./
           ls -l /home/runner/work/HA-FoxESS/HA-FoxESS/custom_components/sfoxess
       - name: Upload zip to release
         uses: svenstaro/upload-release-action@v2
