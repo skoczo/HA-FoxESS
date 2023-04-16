@@ -1,3 +1,6 @@
+[![Release](https://github.com/skoczo/HA-FoxESS/actions/workflows/release.yaml/badge.svg)](https://github.com/skoczo/HA-FoxESS/actions/workflows/release.yaml)
+
+
 Example config
 
 sensor:
