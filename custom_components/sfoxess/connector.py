@@ -79,8 +79,13 @@ class FoxEssConnector(object):
 
         payload = {"user": self._username, "password": password_hash}
         headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0",
             "contentType": "application/json",
             "Content-Type": "application/json;charset=utf-8",
+            "Origin": "https://www.foxesscloud.com",
+            "Referer": "https://www.foxesscloud.com/login",
+            "Host": "www.foxesscloud.com",
+            "Accept": "application/json, text/plain",
         }
 
         response = await self._hass.async_add_executor_job(
@@ -142,6 +147,9 @@ class FoxEssConnector(object):
 
     async def _get_report(self, report_date, report_type):
         headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0",
+            "contentType": "application/json",
+            "Content-Type": "application/json;charset=utf-8",
             "contentType": "application/json",
             "token": self._token,
         }
@@ -175,6 +183,9 @@ class FoxEssConnector(object):
         await self.login()
 
         headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0",
+            "contentType": "application/json",
+            "Content-Type": "application/json;charset=utf-8",
             "contentType": "application/json",
             "token": self._token,
         }
