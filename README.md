@@ -1,5 +1,6 @@
 [![Release](https://github.com/skoczo/HA-FoxESS/actions/workflows/release.yaml/badge.svg)](https://github.com/skoczo/HA-FoxESS/actions/workflows/release.yaml)
 
+Statistics will be refreshed once a day
 
 Example config
 
