@@ -4,10 +4,11 @@ Statistics will be refreshed once a day
 
 Example config
 
-sensor:
+```sensor:
   - platform: sfoxess
     username: %put you username here%
     password: %password%
     device_id: %device id%
     import: true %if you want to import old data put true here%
     import_start_date: 01-01-2023 %put start import date here, you don't need to import all data%
+```
