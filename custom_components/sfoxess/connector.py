@@ -15,6 +15,7 @@ class Action(Enum):
     SUCCESS = 2
     FAIL = 3
     AUTH_FAIL = 4
+    SERVER_FAIL = 5
 
 
 MESSAGE = "message"
@@ -25,6 +26,7 @@ KNOWN_ERRORS = {
     0: {MESSAGE: "Success", ACTION: Action.SUCCESS},
     41807: {MESSAGE: "Bad credentials", ACTION: Action.AUTH_FAIL},
     41930: {MESSAGE: "Bad device id", ACTION: Action.FAIL},
+    30000: {MESSAGE: "Server under maintenance", ACTION: Action.SERVER_FAIL},
 }
 
 
@@ -125,6 +127,9 @@ class FoxEssConnector(object):
             raise InvalidAuth
 
         if known["action"] == Action.FAIL:
+            raise HomeAssistantError(known["message"])
+
+        if known["action"] == Action.SERVER_FAIL:
             raise HomeAssistantError(known["message"])
 
     async def login(self):

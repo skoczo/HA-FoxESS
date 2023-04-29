@@ -15,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 class FoxESSUpdateCoordinator(DataUpdateCoordinator[FoxESSDataSet]):
     def __init__(self, hass: HomeAssistant, connector: FoxEssConnector):
         super().__init__(
-            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=60 * 5)
+            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=60 * 10)
         )
         self._connector = connector
         self._data_set = FoxESSDataSet()
